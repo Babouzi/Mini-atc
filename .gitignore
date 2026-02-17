@@ -3,3 +3,5 @@ __pychache__/
 *.db
 .env
 .DS_Store
+credentials.json
+.idea/
