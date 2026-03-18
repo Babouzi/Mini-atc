@@ -94,16 +94,28 @@ def get_watched_flights():
 
 @st.cache_data(show_spinner=False)
 def get_credentials(file_path):
-    """Lit les credentials OpenSky depuis credentials.json"""
+    """Lit les credentials OpenSky depuis st.secrets (Streamlit Cloud) ou credentials.json (local)"""
     try:
+        # D'abord essayer de lire depuis st.secrets (Streamlit Cloud)
+        if "clientId" in st.secrets and "clientSecret" in st.secrets:
+            return st.secrets["clientId"], st.secrets["clientSecret"]
+        
+        # Sinon, lire depuis credentials.json (développement en local)
         with open(file_path, "r") as file:
             credentials = json.load(file)
             return credentials["clientId"], credentials["clientSecret"]
+    
     except FileNotFoundError:
-        st.error("Fichier credentials.json non trouvé")
+        st.error("Erreur: credentials.json non trouvé et secrets pas configurés dans Streamlit Cloud")
+        st.error("En local: créer credentials.json avec clientId et clientSecret")
         st.stop()
-    except KeyError:
-        st.error("Clés 'clientId' ou 'clientSecret' manquantes")
+    
+    except KeyError as e:
+        st.error(f"Erreur: clé manquante dans credentials - {e}")
+        st.stop()
+    
+    except json.JSONDecodeError:
+        st.error("Erreur: credentials.json a un format JSON invalide")
         st.stop()
 
 def get_access_token(client_id, client_secret):
