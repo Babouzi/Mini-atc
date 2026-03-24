@@ -52,15 +52,21 @@ class TokenManager:
 
     def _refresh(self):
         """Récupère un nouveau token auprès du serveur d'authentification OpenSky."""
-        r = rq.post(
-            TOKEN_URL,
-            data={
-                "grant_type": "client_credentials",
-                "client_id": self.client_id,
-                "client_secret": self.client_secret,
-            },
-        )
-        r.raise_for_status()
+        try:
+            r = rq.post(
+                TOKEN_URL,
+                data={
+                    "grant_type": "client_credentials",
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                },
+                timeout=10,
+            )
+            r.raise_for_status()
+        except rq.exceptions.Timeout:
+            raise Exception("Timeout lors de la connexion à OpenSky (serveur lent ou indisponible)")
+        except rq.exceptions.RequestException as e:
+            raise Exception(f"Erreur authentification OpenSky: {e}")
 
         data = r.json()
         self.token = data["access_token"]
@@ -161,14 +167,27 @@ def get_live_flights():
 
     try:
         tm = st.session_state["token_manager"]
-        response = rq.get(url, params=params, headers=tm.headers())
+        response = rq.get(url, params=params, headers=tm.headers(), timeout=10)
 
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            if "states" not in data:
+                st.error("Réponse API invalide: pas de données de vols")
+                return None
+            return data
+        elif response.status_code == 401:
+            st.error("Authentification échouée: vérifiez vos credentials OpenSky")
+            return None
+        elif response.status_code == 429:
+            st.error("Trop de requêtes vers OpenSky (rate limit). Attendez quelques secondes.")
+            return None
         else:
-            st.error(f"Erreur API: {response.status_code}")
+            st.error(f"Erreur API OpenSky: {response.status_code} - {response.text[:200]}")
             return None
 
+    except rq.exceptions.Timeout:
+        st.error("Timeout: OpenSky ne répond pas (serveur lent ou indisponible)")
+        return None
     except Exception as e:
         st.error(f"Erreur réseau: {e}")
         return None
@@ -278,7 +297,6 @@ with tab_radar:
             flight_row = df_memory[df_memory["ID"] == selected_id].iloc[0]
             if add_watched_flight(flight_row["ID"], flight_row["Flight"]):
                 st.success(f"{flight_row['Flight']} ajouté à la surveillance")
-                st.rerun()
             else:
                 st.error("Erreur lors de l'ajout du vol")
 
