@@ -1,0 +1,28 @@
+# docker-compose.yml
+version: '3.9'
+
+services:
+  # Le nom du service (mini-atc-app)
+  mini-atc-app:
+    # Construire l'image à partir du Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    # Nom du conteneur
+    container_name: mini-atc-container
+    
+    ports:
+      - "8501:8501"
+    
+    # Utile en développement pour voir les changements en temps réel
+    volumes:
+      - .:/app
+    
+    # Variables d'environnement
+    environment:
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+    
+    # Relancer le conteneur s'il crash
+    restart: unless-stopped

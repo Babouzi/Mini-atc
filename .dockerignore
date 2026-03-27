@@ -1,0 +1,22 @@
+# .dockerignore - Exclut ces fichiers lors de la construction de l'image
+# C'est plus rapide et l'image est plus petite
+
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv
+.git
+.gitignore
+.env
+.env.local
+.pytest_cache
+*.db
+*.sqlite
+.DS_Store
+.vscode
+.idea
+README.md
