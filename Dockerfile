@@ -10,8 +10,7 @@ WORKDIR /app
 # On copie requirements.txt d'abord (pour profiter du cache Docker)
 COPY requirements.txt .
 
-#  Installer les dépendances Python
-# --no-cache-dir réduit la taille de l'image (pas besoin de cache en production)
+
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copier le reste du projet
@@ -19,10 +18,8 @@ COPY app.py .
 COPY entrypoint.sh .
 
 # Exposer le port (Streamlit utilise le port 8501 par défaut)
-# Note: Cela ne publie pas le port, c'est juste de la documentation
 EXPOSE 8501
 
-# Configurer Streamlit pour fonctionner en conteneur
 # Ces variables d'environnement disent à Streamlit de:
 # - Ne pas afficher le menu de config
 # - Écouter sur 0.0.0.0 (accessible de l'extérieur)

@@ -10,9 +10,12 @@ Ce projet m'a permis de pratiquer et améliorer mes connaissances sur:
 - **APIs REST** - Intégration avec OpenSky Network (authentification OAuth2, gestion des erreurs)
 - **Pandas** - Manipulation et nettoyage de données
 - **SQLite** - Création de base de données et requêtes SQL
-- **Streamlit** - Création d'interface web interactive
-- **Plotly** - Visualisations avec des cartes et graphiques
-- **Git & GitHub** - Gestion de version
+- **Streamlit** - Création d'interface web interactive avec état et cache
+- **Plotly** - Visualisations avec des cartes et graphiques interactifs
+- **Docker** - Containerisation, Dockerfile, gestion des secrets en production, variables d'environnement
+- **Docker Compose** - Orchestration pour développement local
+- **Déploiement** - Configuration et déploiement sur Railway avec gestion des secrets
+- **Git & GitHub** - Gestion de version, bonnes pratiques (.gitignore, commits atomiques)
 
 **Note:** J'ai utilisé des IA génératives (ChatGPT, Claude) pour m'aiguiller sur l'architecture, formater le code et ajouter des commentaires. Je n'ai pas laissé l'IA coder à ma place.
 
@@ -40,48 +43,90 @@ On peut aussi **créer une liste de vols à surveiller**  ils seront stockés en
 - **SQLite3** - Base de données
 - **Requests** - Requêtes HTTP
 
-## Installation
+## Installation et exécution
 
-### 1. Cloner le projet
+### Option 1 : Développement local
+
+#### 1. Cloner le projet
 
 ```bash
 git clone https://github.com/babouzi/mini-atc.git
 cd mini-atc
 ```
 
-### 2. Installer les dépendances
+#### 2. Créer un environnement virtuel
+
+```bash
+python -m venv venv
+source venv/bin/activate  # Sur Windows: venv\Scripts\activate
+```
+
+#### 3. Installer les dépendances
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Créer un fichier `credentials.json`
+#### 4. Créer un fichier `.streamlit/secrets.toml`
 
 Il faut d'abord créer un compte OpenSky (gratuit):
 1. Allez sur https://opensky-network.org
 2. Créez un compte
 3. Allez sur https://opensky-network.org/my-opensky/account
-3. Créez un nouveau client API
-4. Copier votre **Client ID** et **Client Secret**
+4. Créez un nouveau client API
+5. Copier votre **Client ID** et **Client Secret**
 
-Créez ensuite un fichier `credentials.json` à la racine du projet:
+Créez ensuite un fichier `.streamlit/secrets.toml` à la racine:
 
-```json
-{
-    "clientId": "votre_client_id",
-    "clientSecret": "votre_client_secret"
-}
+```toml
+clientId = "votre_client_id"
+clientSecret = "votre_client_secret"
 ```
 
-⚠️**IMPORTANT:** Ce fichier est en `.gitignore`, ne l'ajoutez jamais sur GitHub!
+⚠️ **IMPORTANT:** Ce fichier est en `.gitignore`, ne l'ajoutez jamais sur GitHub!
 
-### 4. Lancer l'application
+#### 5. Lancer l'application
 
 ```bash
 streamlit run app.py
 ```
 
 L'app s'ouvre automatiquement sur http://localhost:8501
+
+### Option 2 : Docker (développement et production)
+
+#### Avec Docker Compose (recommandé)
+
+```bash
+docker-compose up
+```
+
+L'app est accessible sur http://localhost:8501
+
+**Note:** Le fichier `.streamlit/secrets.toml` doit exister localement pour le mode développement avec Docker Compose.
+
+#### Avec Docker directement
+
+```bash
+docker build -t mini-atc:latest .
+docker run -p 8501:8501 \
+  -e STREAMLIT_CLIENTID="votre_client_id" \
+  -e STREAMLIT_CLIENTSECRET="votre_client_secret" \
+  mini-atc:latest
+```
+
+### Option 3 : Déploiement sur Railway
+
+1. Pousser votre code sur GitHub
+2. Créer un compte sur https://railway.app
+3. Connecter votre repo GitHub
+4. Railway détecte le Dockerfile et construit automatiquement l'image
+5. Ajouter les variables d'environnement dans le dashboard Railway :
+   - `STREAMLIT_CLIENTID`
+   - `STREAMLIT_CLIENTSECRET`
+6. Railway redéploie automatiquement et l'app est accessible via une URL publique
+
+**Avantage:** Pas besoin de serveur, déploiement automatique à chaque push Git.
 
 ## Comment l'utiliser?
 
@@ -99,18 +144,35 @@ L'app s'ouvre automatiquement sur http://localhost:8501
 2. Cliquez **"Actualiser les données radar"** pour mettre à jour leurs positions
 3. Consultez l'historique de tous vos vols surveillés
 
-## 🔧 Structure du code
+## 🔧 Structure du code et fichiers
+
+```
+mini-atc/
+├── app.py                      # Application principale Streamlit
+├── Dockerfile                  # Configuration Docker pour production
+├── docker-compose.yml          # Configuration Docker Compose pour développement
+├── entrypoint.sh               # Script de démarrage (gestion des secrets)
+├── requirements.txt            # Dépendances Python
+├── .gitignore                  # Fichiers à ignorer (secrets, cache, etc.)
+├── .streamlit/
+│   └── secrets.toml           # Secrets locaux (ignoré en Git)
+├── radar_database.db          # Base de données SQLite (créée automatiquement)
+└── README.md                  # Ce fichier
+```
+
+### Contenu de app.py
 
 ```
 app.py
-├── DATABASE FUNCTIONS       # Gestion SQLite
-├── AUTHENTICATION FUNCTIONS # OAuth2 OpenSky
-├── API OPENSKY FUNCTIONS    # Récupération des vols
-├── INITIALISATION           # Setup au démarrage
-└── INTERFACE STREAMLIT      # Les 2 onglets
+├── TOKEN MANAGER               # Gestion du token OAuth2 OpenSky
+├── DATABASE FUNCTIONS          # Gestion SQLite (création, lecture, suppression)
+├── API OPENSKY FUNCTIONS       # Récupération des vols en temps réel
+├── CREDENTIALS                 # Lecture des secrets (OAuth2)
+├── INITIALISATION              # Setup Streamlit au démarrage
+└── INTERFACE STREAMLIT         # Interface utilisateur (2 onglets)
+    ├── Radar en temps réel     # Affichage de tous les vols
+    └── Vols surveillés         # Liste personnalisée avec historique
 ```
-
-Chaque section est commentée pour faciliter la compréhension.
 
 ## Données
 
@@ -126,11 +188,19 @@ Les données viennent de l'**API OpenSky Network**:
 - Export des données (CSV)
 - Dashboard avec statistiques
 
-## Notes
+## Notes et considérations
 
 - Les données OpenSky Network peuvent être limitées selon votre localisation
 - L'API gratuite a une limite de débit (rate limiting)
-- En cas de déploiement sur le Cloud (ex: Streamlit Community Cloud), la base de données SQLite locale sera réinitialisée à chaque redémarrage du conteneur. Pour une vraie mise en production, il faudrait utiliser une base de données externe comme PostgreSQL."
+- En développement local, les secrets sont lus depuis `.streamlit/secrets.toml`
+- En production (Docker/Railway), les secrets sont passés via variables d'environnement et injectés via le script `entrypoint.sh`
+- La base de données SQLite est locale et sera réinitialisée à chaque redémarrage du conteneur. Pour une vraie mise en production avec persistance des données, il faudrait utiliser une base de données externe comme PostgreSQL
+
+## Sécurité
+
+- Les fichiers sensibles (`.streamlit/secrets.toml`, `.env`) sont ignorés par `.gitignore`
+- Les secrets ne sont jamais stockés dans le Dockerfile ou l'image Docker
+- Les variables d'environnement sensibles doivent être gérées par la plateforme de déploiement (Railway, Heroku, etc.)
 ## Ressources utiles
 
 - [Documentation OpenSky Network](https://openskynetwork.github.io/opensky-api/)
