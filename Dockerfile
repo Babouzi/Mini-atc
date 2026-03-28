@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copier le reste du projet
 COPY app.py .
-
+COPY entrypoint.sh .
 
 # Exposer le port (Streamlit utilise le port 8501 par défaut)
 # Note: Cela ne publie pas le port, c'est juste de la documentation
@@ -29,6 +29,10 @@ EXPOSE 8501
 ENV STREAMLIT_SERVER_HEADLESS=true
 ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
 
+# Rendre le script exécutable
+RUN chmod +x /app/entrypoint.sh
+
 # Commande de démarrage
-# "streamlit run" lance votre app
-CMD ["streamlit", "run", "app.py"]
+# Le script crée le fichier secrets.toml à partir des variables d'env
+# Puis lance Streamlit
+ENTRYPOINT ["/app/entrypoint.sh"]
