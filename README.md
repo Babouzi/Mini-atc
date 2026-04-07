@@ -132,17 +132,27 @@ docker run -p 8501:8501 \
 
 ### Onglet "Radar en temps réel"
 
-1. Cliquez sur le bouton **"Actualiser le radar"**
+1. Cliquez sur le bouton "Actualiser le radar"
 2. Attendez quelques secondes
 3. Vous voyez tous les vols détectés sur la carte
 4. Explorez les graphiques et la table de données
-5. Sélectionnez un vol et cliquez **"Ajouter ce vol"** pour le surveiller
+5. Sélectionnez un vol et cliquez "Ajouter ce vol" pour le surveiller
+
+![Radar en temps réel](screenshots/Dashboard_map_graph.png)
 
 ### Onglet "Vols surveillés"
 
 1. Voyez les vols que vous avez ajoutés à votre liste
-2. Cliquez **"Actualiser les données radar"** pour mettre à jour leurs positions
+2. Cliquez "Actualiser les données radar" pour mettre à jour leurs positions
 3. Consultez l'historique de tous vos vols surveillés
+
+![Vols surveillés](screenshots/dashboard_vols_suriveillés.png)
+
+### Détail des vols détectés
+
+Chaque vol affiche des informations détaillées : identifiant, position, altitude, vitesse et direction.
+
+![Détail des vols](screenshots/detail_vols_detectes.png)
 
 ## 🔧 Structure du code et fichiers
 
